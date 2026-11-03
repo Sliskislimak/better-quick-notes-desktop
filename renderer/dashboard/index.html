@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https: qn-asset:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Quick Notes · All notes</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<div class="qn-wrap" data-theme="dark" id="wrap">
+  <header class="qd-head">
+    <span class="qn-brand"><span class="qn-brand-dot"></span>NOTES · ALL APPS</span>
+    <input class="qn-input qd-search" id="search" type="search" placeholder="Search all notes…  (Ctrl+F)" spellcheck="false">
+    <div class="qd-tags" id="tagFilter" title="Filter by color tag"></div>
+    <select class="qn-select qd-sort" id="sort" title="Sort">
+      <option value="updated">Recently updated</option>
+      <option value="created">Recently created</option>
+      <option value="title">Title A–Z</option>
+      <option value="app">Application</option>
+    </select>
+    <button class="qn-btn" id="newBtn" title="New note (Ctrl+N)" data-icon="plus"></button>
+    <button class="qn-btn" id="settingsBtn" title="Settings" data-icon="gear"></button>
+    <div class="qn-bar-sep"></div>
+    <button class="qn-btn" id="minBtn" title="Minimize" data-icon="minus"></button>
+    <button class="qn-btn" id="closeBtn" title="Close (Esc)" data-icon="x"></button>
+  </header>
+
+  <div class="qd-main">
+    <nav class="qd-apps" id="apps"></nav>
+
+    <section class="qd-listcol">
+      <ul class="qn-list" id="list"></ul>
+      <div class="qd-foot"><span id="count">0 notes</span><span><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> edit · <kbd>Esc</kbd> back</span></div>
+    </section>
+
+    <section class="qd-detail" id="detail">
+      <div class="qd-empty" id="empty">Select a note</div>
+      <div class="qd-editor" id="editor" hidden>
+        <div class="qd-title-row">
+          <span class="qn-brand-dot" id="tagDot"></span>
+          <input class="qd-title" id="title" spellcheck="false" title="Rename (empty = derive from first line)">
+          <button class="qn-btn" id="pinBtn" title="Pin" data-icon="pin"></button>
+          <button class="qn-btn" id="tagBtn" title="Color tag" data-icon="tag"></button>
+          <button class="qn-btn" id="previewBtn" title="Preview (Ctrl+E)" data-icon="eye"></button>
+          <button class="qn-btn" id="revealBtn" title="Show file in Explorer" data-icon="folder"></button>
+          <button class="qn-btn" id="obsidianBtn" title="Open in Obsidian" data-icon="external"></button>
+          <button class="qn-btn" id="exportBtn" title="Export .md" data-icon="download"></button>
+          <button class="qn-btn" id="deleteBtn" title="Delete" data-icon="trash"></button>
+        </div>
+        <div class="qd-meta-row">
+          <label>App
+            <input class="qn-input qd-appinput" id="appInput" list="knownApps" placeholder="process.exe" spellcheck="false" title="Executable this note is pinned to">
+          </label>
+          <datalist id="knownApps"></datalist>
+          <span class="qd-meta" id="meta"></span>
+        </div>
+        <div class="qd-body">
+          <textarea class="qd-text" id="text" spellcheck="true" placeholder="Write…"></textarea>
+          <div class="qn-preview" id="preview" hidden></div>
+        </div>
+        <div class="qd-foot"><span id="counter"></span><span id="status" class="qd-status">ready</span></div>
+      </div>
+    </section>
+  </div>
+</div>
+<script src="../shared/common.js"></script>
+<script src="../shared/markdown.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

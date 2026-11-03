@@ -1,0 +1,76 @@
+/* Collapsed state: a slim bar hanging from the top edge of the target app.
+   The window is 10px wider on each side and 10px taller at the bottom so
+   the shadow has room. */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+.qn-dock {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 6px 0 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transform: translateY(0);
+  transition: opacity 260ms ease, transform 200ms cubic-bezier(.2,.8,.2,1), backdrop-filter 260ms ease, background 260ms ease;
+}
+.qn-dock.slide-in { animation: qn-slide 220ms cubic-bezier(.2,.8,.2,1); }
+@keyframes qn-slide {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+/* Frosted / idle: translucent and blurred until hovered or woken by a hotkey. */
+.qn-dock.idle {
+  opacity: var(--idle-opacity, 0.25);
+  background: rgb(var(--bg-rgb) / 0.55);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  backdrop-filter: blur(8px) saturate(1.2);
+}
+.qn-dock.idle:hover, .qn-dock:hover {
+  opacity: 1;
+  background: var(--bg);
+}
+.qn-dock.dragging { cursor: grabbing; }
+
+.qn-dock-ico { display: flex; width: 14px; height: 14px; flex-shrink: 0; color: var(--muted); }
+.qn-dock-ico img { width: 14px; height: 14px; }
+.qn-dock-ico svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.qn-dock .qn-brand { font-size: 10px; }
+.qn-dock-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qn-dock-count {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  padding: 0 6px;
+  line-height: 15px;
+}
+.qn-dock .qn-btn { padding: 3px 4px; }
+.qn-dock .qn-btn svg { width: 13px; height: 13px; }

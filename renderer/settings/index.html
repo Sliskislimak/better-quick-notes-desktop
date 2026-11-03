@@ -1,0 +1,241 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Quick Notes · Settings</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📝 Quick Notes · Settings</h1>
+    <p class="muted">Sticky notes pinned to your Windows apps. Configure hotkeys, the Obsidian vault folder, Google Drive sync, and appearance.</p>
+  </header>
+
+  <nav class="toc">
+    <a href="#hotkeys">⌨ Hotkeys</a>
+    <a href="#vault">📁 Vault</a>
+    <a href="#drive">☁ Drive</a>
+    <a href="#appearance">🎨 Appearance</a>
+    <a href="#behavior">⚙ Behavior</a>
+    <a href="#backup">💾 Backup</a>
+    <a href="#about">ℹ About</a>
+  </nav>
+
+  <section id="hotkeys">
+    <h2>⌨ Global hotkeys</h2>
+    <p class="muted">
+      These work system-wide, even while another app is focused. Click a hotkey, then press the new combination.
+      <kbd>Esc</kbd> cancels, <kbd>Backspace</kbd> disables the hotkey.
+    </p>
+    <table class="hotkeyTable" id="hotkeyTable"></table>
+    <div class="btnRow">
+      <button id="hotkeysReset" class="small-reset">Reset to defaults</button>
+    </div>
+    <h3>Inside a note</h3>
+    <div class="localKeys">
+      <span><kbd>Ctrl</kbd>+<kbd>B</kbd></span><span>Bold</span>
+      <span><kbd>Ctrl</kbd>+<kbd>I</kbd></span><span>Italic</span>
+      <span><kbd>Ctrl</kbd>+<kbd>U</kbd></span><span>Underline</span>
+      <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd></span><span>Strikethrough</span>
+      <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd></span><span>Bullet list</span>
+      <span><kbd>Ctrl</kbd>+<kbd>N</kbd> · <kbd>Ctrl</kbd>+<kbd>Tab</kbd></span><span>New note in this app's stack · next note in the stack</span>
+      <span><kbd>Ctrl</kbd>+<kbd>F</kbd> · <kbd>Ctrl</kbd>+<kbd>E</kbd></span><span>Search · toggle Markdown preview</span>
+      <span><kbd>F2</kbd></span><span>Rename note</span>
+      <span><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> · <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd></span><span>Split view · re-center panel</span>
+      <span><kbd>Esc</kbd></span><span>Close menu / view, then collapse the note to the docked bar</span>
+    </div>
+    <p id="trackerStatus" class="muted small"></p>
+  </section>
+
+  <section id="vault">
+    <h2>📁 Local vault folder</h2>
+    <p class="muted">
+      Each note is saved as a Markdown file with YAML frontmatter in a folder you choose, such as an Obsidian vault.
+      The file name is <code>Title_noteId.md</code>, using the first 6 characters of the note id.
+      These characters in the title become hyphens: <code>&lt; &gt; : " / \ | ? *</code>.
+      Edits made in Obsidian (or any editor) are picked up live.
+    </p>
+    <div class="btnRow">
+      <button id="vaultChoose" class="primary">Choose folder</button>
+      <button id="vaultOpen">Open folder</button>
+      <button id="vaultForget">Forget folder</button>
+    </div>
+    <p id="vaultStatus" class="muted small"></p>
+  </section>
+
+  <section id="drive">
+    <h2>☁ Google Drive sync</h2>
+    <p class="muted">
+      Each note is uploaded as a Markdown file into the folder you choose. Autosave updates that same
+      file (PATCH) instead of creating another copy. Deleting a note moves its Drive file to the trash.
+    </p>
+    <details class="help">
+      <summary>How to get an OAuth client ID and secret</summary>
+      <ol>
+        <li>Open <a href="https://console.cloud.google.com/apis/credentials" data-ext>Google Cloud Console → Credentials</a> and create (or pick) a project.</li>
+        <li>Enable the <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" data-ext>Google Drive API</a>.</li>
+        <li>Configure the OAuth consent screen (External, add yourself as a test user).</li>
+        <li>Create credentials → <strong>OAuth client ID</strong> → application type <strong>Desktop app</strong>.</li>
+        <li>Paste the client ID and client secret below, then click <em>Sign in with Google</em>. The browser opens; after you approve, it redirects back to this app on <code>127.0.0.1</code>.</li>
+      </ol>
+    </details>
+    <div class="inputRow">
+      <label for="driveClientId">Client ID</label>
+      <input id="driveClientId" type="text" placeholder="1234567890-abc.apps.googleusercontent.com" spellcheck="false" autocomplete="off">
+    </div>
+    <div class="inputRow">
+      <label for="driveClientSecret">Client secret</label>
+      <input id="driveClientSecret" type="password" placeholder="GOCSPX-…" spellcheck="false" autocomplete="off">
+      <button id="driveSecretSave">Save</button>
+    </div>
+    <div class="inputRow">
+      <label for="driveScope">Access</label>
+      <select id="driveScope">
+        <option value="drive">Full Drive (any folder ID works)</option>
+        <option value="drive.file">Only files created by this app (drive.file)</option>
+      </select>
+    </div>
+    <p class="warning small" id="scopeWarning" hidden>
+      With <code>drive.file</code>, only folders created by this app are reachable, so use <em>Create a Quick Notes folder</em>
+      instead of pasting an arbitrary folder ID. Sign in again after changing the access level.
+    </p>
+    <div class="inputRow">
+      <label for="driveFolderId">Folder ID</label>
+      <input id="driveFolderId" type="text" placeholder="Google Drive folder ID (from the folder URL)" spellcheck="false" autocomplete="off">
+      <button id="driveFolderSave" type="button">Save</button>
+    </div>
+    <div class="btnRow">
+      <button id="driveFolderTest" type="button">Test connection</button>
+      <button id="driveFolderCreate" type="button">Create a Quick Notes folder</button>
+    </div>
+    <p id="driveFolderStatus" class="muted small"></p>
+    <div class="driveRow">
+      <button id="driveSignInBtn" class="primary">Sign in with Google</button>
+      <button id="driveSignOutBtn" hidden>Sign out</button>
+      <span id="driveAccountLabel" class="muted small"></span>
+    </div>
+    <div class="driveBody" id="driveBody" hidden>
+      <label class="chkRow"><input type="checkbox" id="driveEnabled">
+        <span>Upload notes automatically<span class="muted">Every change is uploaded a few seconds after you stop typing.</span></span>
+      </label>
+      <div class="driveRow">
+        <button id="driveSyncNowBtn">⇅ Sync now</button>
+        <button id="drivePushBtn">⬆ Push local → Drive</button>
+        <button id="drivePullBtn">⬇ Pull Drive → local</button>
+        <label>Pull changes
+          <select id="driveInterval">
+            <option value="0">manually</option>
+            <option value="5">every 5 min</option>
+            <option value="15">every 15 min</option>
+            <option value="30">every 30 min</option>
+            <option value="60">every hour</option>
+          </select>
+        </label>
+      </div>
+      <p id="driveStatus" class="muted small"></p>
+    </div>
+  </section>
+
+  <section id="appearance">
+    <h2>🎨 Appearance</h2>
+    <div class="inputRow">
+      <label for="themeSelect">Theme</label>
+      <select id="themeSelect">
+        <option value="dark">🦇 Dark</option>
+        <option value="light">☀ Light</option>
+      </select>
+    </div>
+    <h3>Note shape</h3>
+    <div class="shapeRow" id="shapeRow">
+      <button class="shapeChip" data-shape="rectangle" title="Rectangle"><span class="shapeGlyph">▭</span><span class="shapeLabel">Rectangle</span></button>
+      <button class="shapeChip" data-shape="rounded" title="Rounded"><span class="shapeGlyph">▢</span><span class="shapeLabel">Rounded</span></button>
+      <button class="shapeChip" data-shape="hexagon" title="Hexagon"><span class="shapeGlyph">⬡</span><span class="shapeLabel">Hexagon</span></button>
+      <button class="shapeChip" data-shape="circle" title="Circle"><span class="shapeGlyph">●</span><span class="shapeLabel">Circle</span></button>
+    </div>
+    <div class="opacityRow">
+      <label for="optOpacity">Note background opacity</label>
+      <input type="range" id="optOpacity" class="opacity-slider" min="30" max="100" step="5" value="100">
+      <span id="optOpacityLabel" class="op-value">100%</span>
+      <button id="optOpacityReset" class="small-reset" title="Reset to 100%">Reset</button>
+    </div>
+    <h3>Custom theme colors</h3>
+    <p class="muted small">Override the default palette. Only five essential colors are exposed; other shades derive automatically.</p>
+    <div class="themeColors" id="themeColors"></div>
+  </section>
+
+  <section id="behavior">
+    <h2>⚙ Behavior</h2>
+    <div class="opacityRow">
+      <label for="idleOpacity">Docked bar idle opacity</label>
+      <input type="range" id="idleOpacity" class="opacity-slider" min="10" max="100" step="5" value="25">
+      <span id="idleOpacityLabel" class="op-value">25%</span>
+    </div>
+    <label class="chkRow"><input type="checkbox" id="restoreExpanded">
+      <span>Open notes expanded when switching to an app<span class="muted">Off: the note docks as a slim bar at the top of the app until you open it.</span></span>
+    </label>
+    <label class="chkRow"><input type="checkbox" id="launchAtLogin">
+      <span>Start Quick Notes when I sign in to Windows<span class="muted" id="launchHint">Applies to the installed build.</span></span>
+    </label>
+
+    <h3>Ignored applications</h3>
+    <p class="muted small">Notes never attach to these executables (e.g. <code>explorer.exe</code>, games, screen recorders).</p>
+    <div class="inputRow">
+      <input id="excludeInput" type="text" placeholder="process.exe" spellcheck="false">
+      <button id="excludeAdd">Add</button>
+    </div>
+    <ul id="excludeList" class="patternList"></ul>
+
+    <h3>Per-app default notes</h3>
+    <p class="muted small">This note is selected first when its app gains focus. Set one with the 🎯 button in a note's toolbar.</p>
+    <ul id="defaultsList" class="patternList"></ul>
+  </section>
+
+  <section id="backup">
+    <h2>💾 Backup &amp; restore</h2>
+    <p class="muted">
+      Export every note, the history, and settings to one JSON file. Backups from the Chrome extension can be imported too.
+    </p>
+    <div class="btnRow">
+      <button id="exportBtn" class="primary">⬇ Export to JSON</button>
+      <button id="importBtn">⬆ Import from JSON…</button>
+      <button id="importReplaceBtn" class="warn">⬆ Import + Replace All…</button>
+    </div>
+    <p id="importStatus" class="muted small"></p>
+
+    <h3>Storage</h3>
+    <ul class="stats">
+      <li>Notes: <span id="statNotes">·</span></li>
+      <li>Apps: <span id="statApps">·</span></li>
+      <li>History entries: <span id="statHistory">·</span></li>
+      <li>Approx size: <span id="statBytes">·</span></li>
+    </ul>
+    <div class="btnRow">
+      <button id="clearHistoryBtn">Clear history</button>
+    </div>
+  </section>
+
+  <section id="about">
+    <h2>ℹ About Quick Notes Desktop</h2>
+    <div class="aboutBox">
+      <p><strong>Quick Notes Desktop</strong> · v<span id="aboutVersion">·</span> <span class="muted small">(Electron <span id="aboutElectron">·</span>)</span></p>
+      <p class="muted">
+        A Windows port of the Quick Notes Chrome extension. Notes pin to applications instead of web pages,
+        stack per app, and save as Markdown to your vault and Google Drive.
+      </p>
+      <p>
+        <a href="https://github.com/quicknotes/quick-notes" data-ext>Original extension on GitHub</a>
+      </p>
+      <p class="muted small">App data: <code id="aboutData">·</code></p>
+    </div>
+  </section>
+
+  <footer class="muted small">
+    Quick Notes · runs locally · no telemetry. Drive sync is opt-in.
+  </footer>
+</div>
+<script src="../shared/common.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

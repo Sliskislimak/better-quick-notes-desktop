@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Quick Notes bar</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <link rel="stylesheet" href="bar.css">
+</head>
+<body>
+<div class="qn-wrap" data-theme="dark" id="wrap">
+  <div class="qn-dock idle" id="dock">
+    <span class="qn-dock-ico" id="appIcon"></span>
+    <span class="qn-brand"><span class="qn-brand-dot" id="dot"></span>NOTES</span>
+    <span class="qn-dock-title" id="title">Untitled</span>
+    <span class="qn-dock-count" id="count" title="Notes stacked on this app">1</span>
+    <button class="qn-btn" id="menuBtn" data-icon="list"></button>
+    <button class="qn-btn" id="expandBtn" data-icon="chevronDown"></button>
+  </div>
+</div>
+<script src="../shared/common.js"></script>
+<script src="bar.js"></script>
+</body>
+</html>

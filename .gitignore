@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.snap-data/
+.snapshots/
+*.log
+.env
+.env.*
+drive-secrets.bin

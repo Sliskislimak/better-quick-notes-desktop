@@ -1,0 +1,57 @@
+{
+  "name": "quick-notes-desktop",
+  "productName": "Quick Notes Desktop",
+  "version": "1.0.0",
+  "description": "Sticky Markdown notes pinned to Windows applications. Desktop port of the Quick Notes Chrome extension with Obsidian vault and Google Drive sync.",
+  "main": "main.js",
+  "author": "Quick Notes contributors",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "node --test test/*.js",
+    "smoke:tracker": "electron scripts/tracker-smoke.js",
+    "snapshots": "electron . --user-data=.snap-data --snapshot=.snapshots",
+    "build": "electron-builder --win",
+    "build:dir": "electron-builder --win --dir"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "koffi": "^3.3.6"
+  },
+  "devDependencies": {
+    "electron": "^40.10.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.quicknotes.desktop",
+    "productName": "Quick Notes Desktop",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "services/**/*",
+      "renderer/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/koffi/**"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}

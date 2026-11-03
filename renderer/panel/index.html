@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https: qn-asset:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Quick Notes</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<div class="qn-wrap" data-theme="dark" data-shape="rounded" id="wrap">
+
+  <div class="qn-zen-drag" id="zenDragStrip" title="Drag to move (Alt+drag works anywhere)"></div>
+
+  <div class="qn-paper" id="paper">
+
+    <!-- Editor view -->
+    <div class="qn-view" id="editorView">
+      <div class="qn-head" id="head">
+        <span class="qn-brand"><span class="qn-brand-dot"></span>NOTES</span>
+        <select class="qn-select" id="noteSelect" title="Switch note in this app's stack"></select>
+        <button class="qn-btn" id="pinNote" title="Pin / unpin this note" data-icon="pin"></button>
+        <button class="qn-btn" id="newNote" title="New note for this app (Ctrl+N)" data-icon="plus"></button>
+        <button class="qn-btn" id="delNote" title="Delete / clear this note" data-icon="trash"></button>
+        <button class="qn-btn" id="renameBtn" title="Rename this note (F2)" data-icon="pencil"></button>
+        <button class="qn-btn" id="tagBtn" title="Color tag this note" data-icon="tag"></button>
+        <div class="qn-bar-sep"></div>
+        <button class="qn-btn" id="searchBtn" title="Search (Ctrl+F)" data-icon="search"></button>
+        <button class="qn-btn" id="historyBtn" title="History" data-icon="clock"></button>
+        <button class="qn-btn" id="splitBtn" title="Split pane (second note side-by-side)" data-icon="split"></button>
+        <button class="qn-btn" id="themeBtn" title="Toggle theme" data-icon="sun"></button>
+        <button class="qn-btn" id="zenBtn" title="Focus mode (hide toolbars for distraction-free writing)" data-icon="zen"></button>
+        <button class="qn-btn" id="dashBtn" title="All notes (global menu)" data-icon="grid"></button>
+        <button class="qn-btn" id="optionsBtn" title="Settings" data-icon="gear"></button>
+        <div class="qn-bar-sep"></div>
+        <button class="qn-btn" id="closeBtn" title="Minimize to the docked bar" data-icon="dock"></button>
+      </div>
+
+      <div class="qn-tabs" id="tabs">
+        <div class="qn-app-chip" id="appChip" title=""><span class="qn-app-ico" id="appIcon"></span><span id="appName">App</span></div>
+        <div class="qn-tab-strip" id="tabStrip"></div>
+      </div>
+
+      <div class="qn-bar" id="toolbar">
+        <div class="qn-bar-group">
+          <button class="qn-btn" id="pasteBtn" title="Paste clipboard" data-icon="clipboard"></button>
+          <button class="qn-btn" id="copyBtn" title="Copy whole note" data-icon="copy"></button>
+        </div>
+        <div class="qn-bar-sep"></div>
+        <div class="qn-bar-group">
+          <button class="qn-btn" id="urlBtn" title="Insert app name and window title" data-icon="app"></button>
+          <button class="qn-btn" id="timeBtn" title="Insert timestamp" data-icon="clock"></button>
+        </div>
+        <div class="qn-bar-sep"></div>
+        <div class="qn-bar-group">
+          <button class="qn-btn" id="divBtn" title="Insert divider">━</button>
+          <button class="qn-btn" id="taskBtn" title="Insert checklist item" data-icon="check"></button>
+          <button class="qn-btn" id="tableBtn" title="Insert Markdown table" data-icon="table"></button>
+        </div>
+        <div class="qn-bar-sep"></div>
+        <div class="qn-bar-group">
+          <button class="qn-btn" id="boldBtn" title="Bold (Ctrl+B)" data-icon="bold"></button>
+          <button class="qn-btn" id="italicBtn" title="Italic (Ctrl+I)" data-icon="italic"></button>
+          <button class="qn-btn" id="underlineBtn" title="Underline (Ctrl+U)" data-icon="underline"></button>
+          <button class="qn-btn" id="strikeBtn" title="Strikethrough (Ctrl+Shift+X)" data-icon="strike"></button>
+          <button class="qn-btn" id="bulletBtn" title="Bullet list (Ctrl+Shift+L)" data-icon="bullet"></button>
+          <button class="qn-btn" id="codeBtn" title="Code (inline or fenced block)" data-icon="code"></button>
+          <button class="qn-btn" id="colorBtn" title="Text color" data-icon="colorText"></button>
+          <button class="qn-btn" id="previewBtn" title="Toggle Markdown preview (Ctrl+E)" data-icon="eye"></button>
+        </div>
+        <div class="qn-bar-sep"></div>
+        <div class="qn-bar-group">
+          <button class="qn-btn" id="zoomOutBtn" title="Decrease text size" data-icon="zoomOut"></button>
+          <span id="zoomLabel" class="qn-zoom-label" title="Reset to default (click)">13px</span>
+          <button class="qn-btn" id="zoomInBtn" title="Increase text size" data-icon="zoomIn"></button>
+        </div>
+        <div class="qn-bar-sep"></div>
+        <div class="qn-bar-group">
+          <button class="qn-btn" id="defaultBtn" title="Set as default note for this app" data-icon="target"></button>
+          <button class="qn-btn" id="dlBtn" title="Export note as .md" data-icon="download"></button>
+        </div>
+        <div class="qn-bar-sep"></div>
+        <div class="qn-opacity-group" title="Panel opacity">
+          <span class="qn-op-icon" data-icon="eye"></span>
+          <input type="range" id="opacitySlider" class="qn-range" min="30" max="100" step="5" value="100">
+          <span id="opacityLabel" class="qn-op-label">100%</span>
+        </div>
+      </div>
+
+      <div class="qn-body" id="body">
+        <div class="qn-pane" id="pane1">
+          <div class="qn-pane-head" id="pane1Head">
+            <select class="qn-select qn-pane-select" id="pane1Select" title="Pane 1 note"></select>
+          </div>
+          <textarea class="qn-text" id="text" spellcheck="true" placeholder="Start typing…   Auto-saved."></textarea>
+        </div>
+        <div class="qn-splitter" id="splitter" hidden></div>
+        <div class="qn-pane" id="pane2" hidden>
+          <div class="qn-pane-head">
+            <select class="qn-select qn-pane-select" id="pane2Select" title="Pane 2 note"></select>
+            <button class="qn-btn qn-pane-btn" id="splitSwapBtn" title="Swap pane 1 ↔ pane 2" data-icon="swap"></button>
+            <button class="qn-btn qn-pane-btn" id="splitDirBtn" title="Flip split direction" data-icon="splitFlip"></button>
+          </div>
+          <textarea class="qn-text" id="text2" spellcheck="true" placeholder="Second note…"></textarea>
+        </div>
+        <div class="qn-preview" id="preview" hidden></div>
+        <button class="qn-zen-exit" id="zenExitBtn" title="Exit distraction-free mode (Esc)" data-icon="zenExit"></button>
+      </div>
+
+      <div class="qn-foot">
+        <span id="counter">0 words · 0 chars</span>
+        <span class="qn-sync" id="syncState" title=""></span>
+        <span id="status" class="qn-status qn-ok">ready</span>
+      </div>
+
+      <!-- App notes drawer -->
+      <div class="qn-drawer-scrim" id="drawerScrim" hidden></div>
+      <div class="qn-drawer" id="drawer" hidden>
+        <div class="qn-search-head">
+          <div class="qn-drawer-title" id="drawerTitle"></div>
+          <button class="qn-btn" id="drawerClose" title="Close (Esc)" data-icon="x"></button>
+        </div>
+        <ul class="qn-list" id="drawerList"></ul>
+        <div class="qn-drawer-foot"><span><kbd>↑</kbd><kbd>↓</kbd> select</span><span><kbd>Enter</kbd> open</span><span><kbd>Ctrl</kbd>+<kbd>N</kbd> new</span><span><kbd>Del</kbd> delete</span><span><kbd>Esc</kbd> close</span></div>
+      </div>
+    </div>
+
+    <!-- Search view -->
+    <div class="qn-view" id="searchView" hidden>
+      <div class="qn-search-head">
+        <button class="qn-btn" id="backFromSearch" title="Back" data-icon="arrowLeft"></button>
+        <input class="qn-input" id="searchInput" type="text" placeholder="Search notes and history…">
+        <select class="qn-select" id="searchScope" style="flex:0 0 96px;">
+          <option value="app">This app</option>
+          <option value="all">All</option>
+          <option value="notes">All notes</option>
+          <option value="history">History</option>
+        </select>
+      </div>
+      <ul class="qn-list" id="searchResults"></ul>
+      <div class="qn-foot">
+        <span id="searchCount">type to search</span>
+        <span class="qn-status">esc to close</span>
+      </div>
+    </div>
+
+    <!-- History view -->
+    <div class="qn-view" id="historyView" hidden>
+      <div class="qn-search-head">
+        <button class="qn-btn" id="backFromHistory" title="Back" data-icon="arrowLeft"></button>
+        <span style="flex:1;font-weight:600;font-size:12px;letter-spacing:0.4px;text-transform:uppercase;color:var(--fg-dim);">History</span>
+        <button class="qn-btn qn-text" id="clearHistoryBtn" title="Clear all">Clear</button>
+      </div>
+      <ul class="qn-list" id="historyList"></ul>
+      <div class="qn-foot">
+        <span id="historyCount">0 entries</span>
+        <span class="qn-status">click to insert</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="qn-rz qn-rz-n"  data-dir="n"></div>
+  <div class="qn-rz qn-rz-s"  data-dir="s"></div>
+  <div class="qn-rz qn-rz-e"  data-dir="e"></div>
+  <div class="qn-rz qn-rz-w"  data-dir="w"></div>
+  <div class="qn-rz qn-rz-ne" data-dir="ne"></div>
+  <div class="qn-rz qn-rz-nw" data-dir="nw"></div>
+  <div class="qn-rz qn-rz-se" data-dir="se"></div>
+  <div class="qn-rz qn-rz-sw" data-dir="sw"></div>
+</div>
+<script src="../shared/common.js"></script>
+<script src="../shared/markdown.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>
