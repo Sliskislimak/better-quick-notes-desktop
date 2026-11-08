@@ -34,7 +34,9 @@ function defaultPrefs() {
     panelByProcess: {},   // processKey -> { anchor, ox, oy, width, height }
     barByProcess: {},     // processKey -> ratio (0..1) along the top edge
     activeByProcess: {},  // processKey -> noteId
-    pane2ByProcess: {}    // processKey -> noteId shown in split pane 2
+    pane2ByProcess: {},   // processKey -> noteId shown in split pane 2
+    dashboardToolbar: true, // formatting toolbar in the All notes window
+    dashboardZen: false     // focus mode in the All notes window
   };
 }
 

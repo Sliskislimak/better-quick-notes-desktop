@@ -43,6 +43,8 @@
           <button class="qn-btn" id="pinBtn" title="Pin" data-icon="pin"></button>
           <button class="qn-btn" id="tagBtn" title="Color tag" data-icon="tag"></button>
           <button class="qn-btn" id="previewBtn" title="Preview (Ctrl+E)" data-icon="eye"></button>
+          <button class="qn-btn" id="zenBtn" title="Focus mode (hide sidebars for distraction-free writing)" data-icon="zen"></button>
+          <button class="qn-btn" id="toolbarToggle" title="Show / hide formatting toolbar" data-icon="chevronUp"></button>
           <button class="qn-btn" id="revealBtn" title="Show file in Explorer" data-icon="folder"></button>
           <button class="qn-btn" id="obsidianBtn" title="Open in Obsidian" data-icon="external"></button>
           <button class="qn-btn" id="exportBtn" title="Export .md" data-icon="download"></button>
@@ -55,9 +57,39 @@
           <datalist id="knownApps"></datalist>
           <span class="qd-meta" id="meta"></span>
         </div>
+        <div class="qd-toolbar" id="toolbar">
+          <div class="qn-bar-group">
+            <button class="qn-btn" id="pasteBtn" title="Paste clipboard" data-icon="clipboard"></button>
+            <button class="qn-btn" id="copyBtn" title="Copy whole note" data-icon="copy"></button>
+          </div>
+          <div class="qn-bar-sep"></div>
+          <div class="qn-bar-group">
+            <button class="qn-btn" id="timeBtn" title="Insert timestamp" data-icon="clock"></button>
+            <button class="qn-btn" id="divBtn" title="Insert divider">━</button>
+            <button class="qn-btn" id="taskBtn" title="Insert checklist item" data-icon="check"></button>
+            <button class="qn-btn" id="tableBtn" title="Insert Markdown table" data-icon="table"></button>
+          </div>
+          <div class="qn-bar-sep"></div>
+          <div class="qn-bar-group">
+            <button class="qn-btn" id="boldBtn" title="Bold (Ctrl+B)" data-icon="bold"></button>
+            <button class="qn-btn" id="italicBtn" title="Italic (Ctrl+I)" data-icon="italic"></button>
+            <button class="qn-btn" id="underlineBtn" title="Underline (Ctrl+U)" data-icon="underline"></button>
+            <button class="qn-btn" id="strikeBtn" title="Strikethrough (Ctrl+Shift+X)" data-icon="strike"></button>
+            <button class="qn-btn" id="bulletBtn" title="Bullet list (Ctrl+Shift+L)" data-icon="bullet"></button>
+            <button class="qn-btn" id="codeBtn" title="Code (inline or fenced block)" data-icon="code"></button>
+            <button class="qn-btn" id="colorBtn" title="Text color" data-icon="colorText"></button>
+          </div>
+          <div class="qn-bar-sep"></div>
+          <div class="qn-bar-group">
+            <button class="qn-btn" id="zoomOutBtn" title="Decrease text size" data-icon="zoomOut"></button>
+            <span id="zoomLabel" class="qn-zoom-label" title="Reset to default (click)">13px</span>
+            <button class="qn-btn" id="zoomInBtn" title="Increase text size" data-icon="zoomIn"></button>
+          </div>
+        </div>
         <div class="qd-body">
           <textarea class="qd-text" id="text" spellcheck="true" placeholder="Write…"></textarea>
           <div class="qn-preview" id="preview" hidden></div>
+          <button class="qn-btn qd-zen-exit" id="zenExitBtn" title="Exit focus mode (Esc)" data-icon="zenExit"></button>
         </div>
         <div class="qd-foot"><span id="counter"></span><span id="status" class="qd-status">ready</span></div>
       </div>

@@ -124,11 +124,11 @@
         const t = tryTable(lines, idx);
         if (t) { closeList(); html += t.html; idx += t.consumed - 1; continue; }
       }
-      const chk = line.match(/^(\s*)[-*] \[( |x|X)\] (.*)$/);
+      const chk = line.match(/^(\s*)[-*] \[( |x|X)\](?:\s+(.*))?$/);
       if (chk) {
         closeList();
         const checked = chk[2].toLowerCase() === 'x';
-        html += `<label class="chk-line ${checked ? 'done' : ''}" data-line="${idx}"><input type="checkbox" ${checked ? 'checked' : ''} data-line="${idx}"><span class="txt">${inline(chk[3])}</span></label>`;
+        html += `<div class="chk-line${checked ? ' done' : ''}" data-line="${idx}"><input type="checkbox"${checked ? ' checked' : ''} tabindex="-1"><span class="txt">${inline(chk[3] || '')}</span></div>`;
         continue;
       }
       const h = line.match(/^(#{1,3})\s+(.+)$/);
@@ -158,5 +158,17 @@
     return html;
   }
 
-  root.QNMarkdown = { render };
+  function toggleCheck(text, lineIndex) {
+    const lines = String(text == null ? '' : text).split('\n');
+    const idx = parseInt(lineIndex, 10);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= lines.length) return String(text == null ? '' : text);
+    const next = lines[idx].replace(/^(\s*[-*] \[)( |x|X)(\])/, (_, a, mark, b) =>
+      a + (mark.toLowerCase() === 'x' ? ' ' : 'x') + b
+    );
+    if (next === lines[idx]) return lines.join('\n');
+    lines[idx] = next;
+    return lines.join('\n');
+  }
+
+  root.QNMarkdown = { render, toggleCheck };
 })(window);

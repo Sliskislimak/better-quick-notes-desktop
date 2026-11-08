@@ -123,8 +123,109 @@
     return [...pinned, ...rest];
   };
 
+  function insertAtCursor(el, text) {
+    const s = el.selectionStart, e = el.selectionEnd;
+    el.value = el.value.slice(0, s) + text + el.value.slice(e);
+    el.selectionStart = el.selectionEnd = s + text.length;
+    el.focus();
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function wrapSelection(el, before, after) {
+    const v = el.value;
+    const s = el.selectionStart, e = el.selectionEnd;
+    const selected = v.slice(s, e);
+    if (selected.startsWith(before) && selected.endsWith(after) && selected.length >= before.length + after.length) {
+      const inner = selected.slice(before.length, selected.length - after.length);
+      el.value = v.slice(0, s) + inner + v.slice(e);
+      el.selectionStart = s;
+      el.selectionEnd = s + inner.length;
+    } else if (v.slice(s - before.length, s) === before && v.slice(e, e + after.length) === after) {
+      el.value = v.slice(0, s - before.length) + selected + v.slice(e + after.length);
+      el.selectionStart = s - before.length;
+      el.selectionEnd = e - before.length;
+    } else {
+      const inserted = before + selected + after;
+      el.value = v.slice(0, s) + inserted + v.slice(e);
+      if (selected) {
+        el.selectionStart = s;
+        el.selectionEnd = s + inserted.length;
+      } else {
+        el.selectionStart = el.selectionEnd = s + before.length;
+      }
+    }
+    el.focus();
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function toggleBulletList(el) {
+    const v = el.value;
+    const start = v.lastIndexOf('\n', el.selectionStart - 1) + 1;
+    let end = v.indexOf('\n', el.selectionEnd - (el.selectionEnd > el.selectionStart && v[el.selectionEnd - 1] === '\n' ? 1 : 0));
+    if (end < 0) end = v.length;
+    const lines = v.slice(start, end).split('\n');
+    const bullet = /^(\s*)[-*+] (?!\[[ xX]\] )/;
+    const filled = lines.filter((l) => l.trim());
+    const allBulleted = filled.length > 0 && filled.every((l) => bullet.test(l));
+    const out = lines.map((l) => {
+      if (allBulleted) return l.replace(bullet, '$1');
+      if (!l.trim() && lines.length > 1) return l;
+      return bullet.test(l) ? l : l.replace(/^(\s*)/, '$1- ');
+    }).join('\n');
+    el.value = v.slice(0, start) + out + v.slice(end);
+    el.selectionStart = start;
+    el.selectionEnd = start + out.length;
+    if (lines.length === 1) el.selectionStart = el.selectionEnd = start + out.length;
+    el.focus();
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function timestampNow() {
+    const now = new Date();
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
+    const offMin = -now.getTimezoneOffset();
+    const sign = offMin >= 0 ? '+' : '-';
+    const abs = Math.abs(offMin);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `[${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} GMT${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)} (${tz})] `;
+  }
+
+  function insertCode(el) {
+    const s = el.selectionStart, e = el.selectionEnd;
+    const selected = el.value.slice(s, e);
+    const before = el.value[s - 1];
+    const leadNl = (s === 0 || before === '\n') ? '' : '\n';
+    if (selected.includes('\n')) {
+      const inserted = `${leadNl}\`\`\`\n${selected}\n\`\`\`\n`;
+      el.value = el.value.slice(0, s) + inserted + el.value.slice(e);
+      el.selectionStart = el.selectionEnd = s + inserted.length;
+    } else if (selected) {
+      wrapSelection(el, '`', '`');
+      return;
+    } else {
+      el.value = el.value.slice(0, s) + `${leadNl}\`\`\`\n\n\`\`\`\n` + el.value.slice(e);
+      el.selectionStart = el.selectionEnd = s + leadNl.length + 4;
+    }
+    el.focus();
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function markdownTable(rows, cols) {
+    const header = '| ' + Array.from({ length: cols }, (_, i) => `Col ${i + 1}`).join(' | ') + ' |';
+    const sep = '| ' + Array.from({ length: cols }, () => '---').join(' | ') + ' |';
+    const body = Array.from({ length: rows }, () => '| ' + Array.from({ length: cols }, () => '   ').join(' | ') + ' |').join('\n');
+    return `${header}\n${sep}\n${body}\n`;
+  }
+
+  const TEXT_COLORS = [
+    { name: 'red', css: '#e57373' }, { name: 'orange', css: '#f0a35e' }, { name: 'yellow', css: '#e7c862' },
+    { name: 'green', css: '#7bb87a' }, { name: 'cyan', css: '#6ec1d4' }, { name: 'blue', css: '#6da4d4' },
+    { name: 'purple', css: '#a880c4' }, { name: 'pink', css: '#d486a8' }, { name: 'clear', css: null }
+  ];
+
   root.QN = {
-    escapeHtml, TAG_CSS, DEFAULT_COLORS, fmtTime, svgIcon, customColorsCss,
-    applyCustomColors, processKey, notesForProcess, sortPinnedRecent
+    escapeHtml, TAG_CSS, DEFAULT_COLORS, TEXT_COLORS, fmtTime, svgIcon, customColorsCss,
+    applyCustomColors, processKey, notesForProcess, sortPinnedRecent,
+    insertAtCursor, wrapSelection, toggleBulletList, timestampNow, insertCode, markdownTable
   };
 })(window);

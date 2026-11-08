@@ -244,8 +244,12 @@
   user-select: none;
 }
 .qn-preview .chk-line:hover { background: var(--row-hover); }
-.qn-preview .chk-line input { margin-top: 4px; cursor: pointer; accent-color: var(--accent); }
-.qn-preview .chk-line.done .txt { text-decoration: line-through; color: var(--muted); }
+.qn-preview .chk-line input { margin-top: 4px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+.qn-preview .chk-line.done .txt,
+.qn-preview .chk-line.done .txt * {
+  text-decoration: line-through;
+  color: var(--muted);
+}
 
 /* ===== Lists (search / history / menus) ===== */
 .qn-list {

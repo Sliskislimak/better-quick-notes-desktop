@@ -1161,14 +1161,13 @@
 
     $('previewBtn').addEventListener('click', togglePreview);
     previewEl.addEventListener('click', async (e) => {
-      const cb = e.target.closest('input[type="checkbox"][data-line]');
-      if (!cb) return;
-      const idx = parseInt(cb.dataset.line, 10);
-      const lines = textarea.value.split('\n');
-      const m = lines[idx] && lines[idx].match(/^(\s*[-*] \[)( |x|X)(\].*)$/);
-      if (!m) return;
-      lines[idx] = m[1] + (m[2].toLowerCase() === 'x' ? ' ' : 'x') + m[3];
-      textarea.value = lines.join('\n');
+      if (e.target.closest('a[href]')) return;
+      const row = e.target.closest('.chk-line[data-line]');
+      if (!row) return;
+      e.preventDefault();
+      const next = window.QNMarkdown.toggleCheck(textarea.value, row.dataset.line);
+      if (next === textarea.value) return;
+      textarea.value = next;
       updateCounter();
       await save();
       renderPreview();

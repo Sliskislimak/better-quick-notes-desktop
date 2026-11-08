@@ -348,13 +348,37 @@ class OverlayManager extends EventEmitter {
   // The renderer only reports mousedown; the cursor is then followed here,
   // which keeps moving smoothly even when the pointer outruns the window.
 
+  // Electron on Windows DPI-scales setPosition() and can grow a frameless
+  // window to the right while the pointer is held. Always move with setBounds
+  // using the size captured at mousedown, and lock min=max during a move.
+  moveWindow(win, x, y, width, height) {
+    win.setBounds({
+      x: Math.round(x),
+      y: Math.round(y),
+      width: Math.round(width),
+      height: Math.round(height)
+    }, false);
+  }
+
+  lockWindowSize(win, width, height) {
+    win.setMinimumSize(width, height);
+    win.setMaximumSize(width, height);
+  }
+
+  unlockWindowSize(win) {
+    win.setMinimumSize(1, 1);
+    win.setMaximumSize(16384, 16384);
+  }
+
   startDrag(kind, dir) {
     const win = kind === 'bar' ? this.bar : this.panel;
     if (!win || this.drag) return;
     const start = screen.getCursorScreenPoint();
     const bounds = win.getBounds();
     const t = this.targetDip();
-    this.drag = { kind, dir, win, start, bounds, t, timer: setInterval(() => this.dragTick(), DRAG_TICK_MS) };
+    const sizeLocked = kind === 'bar' || kind === 'move';
+    if (sizeLocked) this.lockWindowSize(win, bounds.width, bounds.height);
+    this.drag = { kind, dir, win, start, bounds, t, sizeLocked, timer: setInterval(() => this.dragTick(), DRAG_TICK_MS) };
   }
 
   dragTick() {
@@ -364,26 +388,27 @@ class OverlayManager extends EventEmitter {
     const p = screen.getCursorScreenPoint();
     const dx = p.x - d.start.x;
     const dy = p.y - d.start.y;
+    const { x: bx, y: by, width: bw, height: bh } = d.bounds;
     if (d.kind === 'bar') {
       if (!d.t) return;
       const minX = d.t.x;
-      const maxX = d.t.x + d.t.width - d.bounds.width;
-      d.win.setPosition(Math.round(Math.max(minX, Math.min(maxX, d.bounds.x + dx))), d.bounds.y);
+      const maxX = d.t.x + d.t.width - bw;
+      this.moveWindow(d.win, Math.max(minX, Math.min(maxX, bx + dx)), by, bw, bh);
     } else if (d.kind === 'move') {
-      d.win.setPosition(d.bounds.x + dx, d.bounds.y + dy);
+      this.moveWindow(d.win, bx + dx, by + dy, bw, bh);
     } else if (d.kind === 'resize') {
       let { x, y, width, height } = d.bounds;
       const min = { w: PANEL_MIN.w + MARGIN * 2, h: PANEL_MIN.h + MARGIN * 2 };
       const max = { w: PANEL_MAX.w + MARGIN * 2, h: PANEL_MAX.h + MARGIN * 2 };
-      if (d.dir.includes('e')) width = d.bounds.width + dx;
-      if (d.dir.includes('s')) height = d.bounds.height + dy;
-      if (d.dir.includes('w')) width = d.bounds.width - dx;
-      if (d.dir.includes('n')) height = d.bounds.height - dy;
+      if (d.dir.includes('e')) width = bw + dx;
+      if (d.dir.includes('s')) height = bh + dy;
+      if (d.dir.includes('w')) width = bw - dx;
+      if (d.dir.includes('n')) height = bh - dy;
       width = Math.max(min.w, Math.min(max.w, width));
       height = Math.max(min.h, Math.min(max.h, height));
-      if (d.dir.includes('w')) x = d.bounds.x + d.bounds.width - width;
-      if (d.dir.includes('n')) y = d.bounds.y + d.bounds.height - height;
-      d.win.setBounds({ x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) });
+      if (d.dir.includes('w')) x = bx + bw - width;
+      if (d.dir.includes('n')) y = by + bh - height;
+      this.moveWindow(d.win, x, y, width, height);
     }
   }
 
@@ -392,10 +417,11 @@ class OverlayManager extends EventEmitter {
     if (!d) return;
     clearInterval(d.timer);
     this.drag = null;
+    if (d.sizeLocked) this.unlockWindowSize(d.win);
     if (d.kind === 'bar') {
       if (d.t) {
         const b = d.win.getBounds();
-        const span = d.t.width - b.width;
+        const span = d.t.width - d.bounds.width;
         const ratio = span > 0 ? (b.x - d.t.x) / span : 0.5;
         this.store.setPrefs({ barByProcess: { ...this.store.prefs.barByProcess, [this.key()]: Math.max(0, Math.min(1, ratio)) } }, { source: 'overlay' });
       }

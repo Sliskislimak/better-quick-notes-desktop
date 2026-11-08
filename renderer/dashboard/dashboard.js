@@ -1,6 +1,9 @@
 // Global notes dashboard (Alt+Shift+A): every note across every app.
 (function () {
-  const { escapeHtml, TAG_CSS, fmtTime, svgIcon, processKey, sortPinnedRecent } = window.QN;
+  const {
+    escapeHtml, TAG_CSS, TEXT_COLORS, fmtTime, svgIcon, processKey, sortPinnedRecent,
+    insertAtCursor, wrapSelection, toggleBulletList, timestampNow, insertCode, markdownTable
+  } = window.QN;
   const $ = (id) => document.getElementById(id);
   const invoke = (ch, ...a) => window.qn.invoke(ch, ...a);
 
@@ -181,9 +184,34 @@
     $('counter').textContent = `${words} word${words === 1 ? '' : 's'} · ${v.length} chars`;
   }
 
+  function applyChrome() {
+    const wrap = document.getElementById('wrap');
+    const zen = !!state.prefs.dashboardZen;
+    const toolbarOn = state.prefs.dashboardToolbar !== false;
+    wrap.classList.toggle('qd-zen', zen);
+    wrap.classList.toggle('qd-toolbar-off', !toolbarOn);
+    $('zenBtn').classList.toggle('qn-active', zen);
+    $('toolbarToggle').classList.toggle('qn-active', toolbarOn);
+    $('toolbarToggle').innerHTML = svgIcon(toolbarOn ? 'chevronUp' : 'chevronDown');
+    $('toolbarToggle').title = toolbarOn ? 'Hide formatting toolbar' : 'Show formatting toolbar';
+    const px = Math.max(10, Math.min(28, Number(state.prefs.fontSize) || 13));
+    $('text').style.fontSize = px + 'px';
+    $('preview').style.fontSize = px + 'px';
+    $('zoomLabel').textContent = px + 'px';
+  }
+
+  function setPrefs(patch) {
+    Object.assign(state.prefs, patch);
+    invoke('prefs:set', patch);
+    applyChrome();
+  }
+
+  function editor() { return $('text'); }
+
   function renderAll() {
     document.getElementById('wrap').dataset.theme = state.prefs.theme === 'light' ? 'light' : 'dark';
     window.QN.applyCustomColors(state.prefs.customColors);
+    applyChrome();
     renderApps();
     renderTagFilter();
     renderList();
@@ -417,6 +445,57 @@
     $('pinBtn').addEventListener('click', () => { const n = byId(state.selectedId); if (n) patchSelected({ pinned: !n.pinned }); });
     $('tagBtn').addEventListener('click', (e) => { e.stopPropagation(); if (!closeTagMenu()) openTagMenu(); });
     $('previewBtn').addEventListener('click', togglePreview);
+    $('zenBtn').addEventListener('click', toggleZen);
+    $('zenExitBtn').addEventListener('click', () => { if (state.prefs.dashboardZen) toggleZen(); });
+    $('toolbarToggle').addEventListener('click', () => {
+      setPrefs({ dashboardToolbar: state.prefs.dashboardToolbar === false });
+    });
+    $('pasteBtn').addEventListener('click', async () => {
+      const t = await invoke('clipboard:read-text');
+      if (t) { insertAtCursor(editor(), t); setStatus('pasted', true); }
+      else setStatus('clipboard empty');
+    });
+    $('copyBtn').addEventListener('click', async () => {
+      await invoke('clipboard:write-text', editor().value);
+      setStatus('copied', true);
+    });
+    $('timeBtn').addEventListener('click', () => { insertAtCursor(editor(), timestampNow()); setStatus('time added', true); });
+    $('divBtn').addEventListener('click', () => { insertAtCursor(editor(), '\n━━━━━━━━━━\n'); setStatus('divider', true); });
+    $('taskBtn').addEventListener('click', () => {
+      const el = editor();
+      const s = el.selectionStart;
+      const before = el.value[s - 1];
+      insertAtCursor(el, ((s === 0 || before === '\n') ? '' : '\n') + '- [ ] ');
+      setStatus('task added', true);
+    });
+    $('tableBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const existing = document.querySelector('.qn-tbl-picker');
+      if (existing) { existing.remove(); return; }
+      openTablePicker(e.currentTarget);
+    });
+    $('boldBtn').addEventListener('click', () => wrapSelection(editor(), '**', '**'));
+    $('italicBtn').addEventListener('click', () => wrapSelection(editor(), '*', '*'));
+    $('underlineBtn').addEventListener('click', () => wrapSelection(editor(), '<u>', '</u>'));
+    $('strikeBtn').addEventListener('click', () => wrapSelection(editor(), '~~', '~~'));
+    $('bulletBtn').addEventListener('click', () => toggleBulletList(editor()));
+    $('codeBtn').addEventListener('click', () => insertCode(editor()));
+    $('colorBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const existing = document.querySelector('.qn-color-menu');
+      if (existing) { existing.remove(); return; }
+      openColorMenu(e.currentTarget);
+    });
+    const ZOOM_MIN = 10, ZOOM_MAX = 28;
+    $('zoomInBtn').addEventListener('click', () => {
+      const next = Math.min(ZOOM_MAX, (state.prefs.fontSize || 13) + 1);
+      if (next !== state.prefs.fontSize) setPrefs({ fontSize: next });
+    });
+    $('zoomOutBtn').addEventListener('click', () => {
+      const next = Math.max(ZOOM_MIN, (state.prefs.fontSize || 13) - 1);
+      if (next !== state.prefs.fontSize) setPrefs({ fontSize: next });
+    });
+    $('zoomLabel').addEventListener('click', () => { setPrefs({ fontSize: 13 }); setStatus('zoom reset', true); });
     $('revealBtn').addEventListener('click', async () => { await flushSave(); invoke('vault:reveal-note', state.selectedId); });
     $('obsidianBtn').addEventListener('click', async () => { await flushSave(); invoke('vault:open-in-obsidian', state.selectedId); });
     $('exportBtn').addEventListener('click', async () => {
@@ -427,11 +506,27 @@
     $('deleteBtn').addEventListener('click', deleteSelected);
     document.addEventListener('mousedown', (e) => {
       if (!e.target.closest('#tagMenu') && !e.target.closest('#tagBtn')) closeTagMenu();
+      if (!e.target.closest('.qn-color-menu') && !e.target.closest('#colorBtn')) {
+        document.querySelectorAll('.qn-color-menu').forEach((m) => m.remove());
+      }
+      if (!e.target.closest('.qn-tbl-picker') && !e.target.closest('#tableBtn')) {
+        document.querySelectorAll('.qn-tbl-picker').forEach((m) => m.remove());
+      }
     });
 
     $('preview').addEventListener('click', (e) => {
       const a = e.target.closest('a[href]');
-      if (a) { e.preventDefault(); invoke('external:open', a.getAttribute('href')); }
+      if (a) { e.preventDefault(); invoke('external:open', a.getAttribute('href')); return; }
+      const row = e.target.closest('.chk-line[data-line]');
+      if (!row) return;
+      e.preventDefault();
+      const ta = $('text');
+      const next = window.QNMarkdown.toggleCheck(ta.value, row.dataset.line);
+      if (next === ta.value) return;
+      ta.value = next;
+      updateCounter();
+      $('preview').innerHTML = window.QNMarkdown.render(ta.value);
+      scheduleSave();
     });
 
     document.addEventListener('keydown', onKeydown);
@@ -443,19 +538,113 @@
     if (!state.preview) $('text').focus();
   }
 
+  function toggleZen() {
+    setPrefs({ dashboardZen: !state.prefs.dashboardZen });
+    if (state.prefs.dashboardZen) $('text').focus();
+  }
+
+  function placeFixedMenu(menu, anchor) {
+    const r = anchor.getBoundingClientRect();
+    menu.style.top = `${r.bottom + 6}px`;
+    menu.style.left = `${Math.max(8, Math.min(window.innerWidth - 200, r.left))}px`;
+    document.body.appendChild(menu);
+  }
+
+  function openColorMenu(anchor) {
+    const menu = document.createElement('div');
+    menu.className = 'qn-color-menu';
+    TEXT_COLORS.forEach((c) => {
+      const sw = document.createElement('button');
+      sw.className = 'qn-color-swatch' + (c.css === null ? ' qn-none' : '');
+      if (c.css) sw.style.background = c.css; else sw.textContent = '∅';
+      sw.title = c.name;
+      sw.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.remove();
+        const el = editor();
+        if (c.css) {
+          wrapSelection(el, `<span style="color: ${c.css}">`, '</span>');
+          return;
+        }
+        const s = el.selectionStart, end = el.selectionEnd;
+        const selected = el.value.slice(s, end);
+        if (!selected) return;
+        const stripped = selected.replace(/^<span\s+style="color:\s*[^"]*">/, '').replace(/<\/span>$/, '');
+        el.value = el.value.slice(0, s) + stripped + el.value.slice(end);
+        el.selectionStart = s;
+        el.selectionEnd = s + stripped.length;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      menu.appendChild(sw);
+    });
+    placeFixedMenu(menu, anchor);
+  }
+
+  function openTablePicker(anchor) {
+    const MAX_R = 8, MAX_C = 8;
+    const picker = document.createElement('div');
+    picker.className = 'qn-tbl-picker';
+    const label = document.createElement('div');
+    label.className = 'qn-tbl-picker-label';
+    label.textContent = '0 × 0';
+    const grid = document.createElement('div');
+    grid.className = 'qn-tbl-picker-grid';
+    grid.style.gridTemplateColumns = `repeat(${MAX_C}, 1fr)`;
+    let hoverR = 0, hoverC = 0;
+    const cells = [];
+    const updateHighlight = () => {
+      label.textContent = `${hoverR} × ${hoverC}`;
+      cells.forEach((c) => c.classList.toggle('qn-active', +c.dataset.r < hoverR && +c.dataset.c < hoverC));
+    };
+    for (let r = 0; r < MAX_R; r++) {
+      for (let c = 0; c < MAX_C; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'qn-tbl-picker-cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.addEventListener('mouseenter', () => { hoverR = r + 1; hoverC = c + 1; updateHighlight(); });
+        cell.addEventListener('click', () => {
+          picker.remove();
+          const el = editor();
+          const s = el.selectionStart;
+          const before = el.value[s - 1];
+          const prefix = (s === 0 || before === '\n') ? '' : '\n';
+          insertAtCursor(el, prefix + markdownTable(hoverR, hoverC));
+        });
+        grid.appendChild(cell);
+        cells.push(cell);
+      }
+    }
+    picker.appendChild(label);
+    picker.appendChild(grid);
+    placeFixedMenu(picker, anchor);
+  }
+
   function onKeydown(e) {
     const ctrl = e.ctrlKey || e.metaKey;
     const active = document.activeElement;
     const inEditor = active === $('text') || active === $('title') || active === $('appInput');
+    const k = e.key.toLowerCase();
 
-    if (ctrl && !e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); $('search').focus(); $('search').select(); return; }
-    if (ctrl && !e.shiftKey && e.key.toLowerCase() === 'n') { e.preventDefault(); newNote(); return; }
-    if (ctrl && !e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); if (byId(state.selectedId)) togglePreview(); return; }
-    if (ctrl && !e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); flushSave(); return; }
+    if (ctrl && !e.shiftKey && k === 'f') { e.preventDefault(); $('search').focus(); $('search').select(); return; }
+    if (ctrl && !e.shiftKey && k === 'n') { e.preventDefault(); newNote(); return; }
+    if (ctrl && !e.shiftKey && k === 'e') { e.preventDefault(); if (byId(state.selectedId)) togglePreview(); return; }
+    if (ctrl && !e.shiftKey && k === 's') { e.preventDefault(); flushSave(); return; }
+
+    if (inEditor && active === $('text') && ctrl) {
+      if (!e.shiftKey && k === 'b') { e.preventDefault(); wrapSelection(editor(), '**', '**'); return; }
+      if (!e.shiftKey && k === 'i') { e.preventDefault(); wrapSelection(editor(), '*', '*'); return; }
+      if (!e.shiftKey && k === 'u') { e.preventDefault(); wrapSelection(editor(), '<u>', '</u>'); return; }
+      if (e.shiftKey && k === 'x') { e.preventDefault(); wrapSelection(editor(), '~~', '~~'); return; }
+      if (e.shiftKey && k === 'l') { e.preventDefault(); toggleBulletList(editor()); return; }
+    }
 
     if (e.key === 'Escape') {
       e.preventDefault();
       if (closeTagMenu()) return;
+      const pop = document.querySelector('.qn-color-menu, .qn-tbl-picker');
+      if (pop) { pop.remove(); return; }
+      if (state.prefs.dashboardZen) { toggleZen(); return; }
       if (inEditor) { active.blur(); $('list').focus(); return; }
       if (active === $('search') && $('search').value) { $('search').value = ''; state.query = ''; renderList(); return; }
       flushSave().then(() => invoke('window:close'));
