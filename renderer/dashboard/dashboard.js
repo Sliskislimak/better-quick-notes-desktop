@@ -24,6 +24,8 @@
   };
 
   let saveTimer = null;
+  let saveInFlight = false;
+  let saveChain = Promise.resolve();
   let lastTyped = 0;
 
   // ---------- Data helpers ----------
@@ -247,20 +249,30 @@
   function scheduleSave() {
     clearTimeout(saveTimer);
     setStatus('saving…');
-    saveTimer = setTimeout(flushSave, 300);
+    saveTimer = setTimeout(() => { queueSave(); }, 300);
+  }
+
+  function queueSave() {
+    saveChain = saveChain.then(() => flushSave()).catch(() => {});
+    return saveChain;
   }
 
   async function flushSave() {
-    if (!saveTimer) return;
     clearTimeout(saveTimer);
     saveTimer = null;
     const id = $('text').dataset.id;
     const n = byId(id);
-    if (!n || n.body === $('text').value) { setStatus('saved', true); return; }
-    const updated = await invoke('notes:update', id, { body: $('text').value });
-    if (updated) upsert(updated);
-    setStatus('saved', true);
-    renderListKeepEditor();
+    const body = $('text').value;
+    if (!n || n.body === body) { setStatus('saved', true); return; }
+    saveInFlight = true;
+    try {
+      const updated = await invoke('notes:update', id, { body });
+      if (updated) upsert({ ...updated, body: $('text').value });
+      setStatus('saved', true);
+      renderListKeepEditor();
+    } finally {
+      saveInFlight = false;
+    }
   }
 
   // Re-render the list without touching the editor contents.
@@ -380,8 +392,10 @@
     if (ev.origin === state.myId) return;
     const ta = $('text');
     const editingThis = ta.dataset.id === ev.note.id;
-    const canReplace = document.activeElement !== ta || Date.now() - lastTyped > 1500;
-    if (editingThis && canReplace && !saveTimer && ta.value !== ev.note.body) {
+    const recentlyEdited = Date.now() - lastTyped <= 1500;
+    const canReplace = !saveInFlight && !saveTimer && !recentlyEdited &&
+      (document.activeElement !== ta || !state.preview);
+    if (editingThis && canReplace && ta.value !== ev.note.body) {
       const { selectionStart: s, selectionEnd: e, scrollTop } = ta;
       ta.value = ev.note.body;
       ta.setSelectionRange(Math.min(s, ta.value.length), Math.min(e, ta.value.length));
@@ -520,13 +534,16 @@
       const row = e.target.closest('.chk-line[data-line]');
       if (!row) return;
       e.preventDefault();
+      e.stopPropagation();
       const ta = $('text');
       const next = window.QNMarkdown.toggleCheck(ta.value, row.dataset.line);
       if (next === ta.value) return;
       ta.value = next;
+      lastTyped = Date.now();
       updateCounter();
       $('preview').innerHTML = window.QNMarkdown.render(ta.value);
-      scheduleSave();
+      setStatus('saving…');
+      queueSave();
     });
 
     document.addEventListener('keydown', onKeydown);
