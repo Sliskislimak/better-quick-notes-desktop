@@ -58,6 +58,8 @@ Inside a note:
 | `Ctrl+Shift+L` | Bullet list (toggles on the selected lines) |
 | `Ctrl+N`, `Ctrl+Tab` | New note in this app's stack, next note in the stack |
 | `Ctrl+F`, `Ctrl+E`, `Ctrl+S` | Search, Markdown preview, save now |
+
+**Checklists:** in Markdown preview (`Ctrl+E`), click a `- [ ]` / `- [x]` row to toggle it. Checked items are struck through and the marker is written into the note body (and vault `.md`), so the state survives reload.
 | `F2` | Rename note |
 | `Alt+Shift+S`, `Alt+Shift+R` | Split view, re-center the panel |
 | `Esc` | Close the open menu or view, then collapse to the bar |
