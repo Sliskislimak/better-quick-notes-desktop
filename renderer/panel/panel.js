@@ -28,6 +28,9 @@
   let previewOn = false;
   let saveTimer = null;
   let p2SaveTimer = null;
+  let saveInFlight = false;
+  let p2SaveInFlight = false;
+  let saveChain = Promise.resolve();
   let lastInputAt = 0;
   let lastEditor = textarea;
   let drawerIndex = 0;
@@ -95,6 +98,10 @@
   }
 
   function canReplace(el) {
+    // Block vault/Drive echo while a checklist/editor save is in flight or
+    // the user just toggled a task in preview (textarea is not focused then).
+    if (saveInFlight || p2SaveInFlight) return false;
+    if (Date.now() - lastInputAt <= 1500 && (saveTimer || p2SaveTimer || previewOn)) return false;
     return document.activeElement !== el || (!saveTimer && !p2SaveTimer && Date.now() - lastInputAt > 1500);
   }
 
@@ -368,7 +375,12 @@
     clearTimeout(saveTimer);
     statusEl.textContent = 'saving…';
     statusEl.classList.remove('qn-ok');
-    saveTimer = setTimeout(save, 200);
+    saveTimer = setTimeout(() => { queueSave(); }, 200);
+  }
+
+  function queueSave() {
+    saveChain = saveChain.then(() => save()).catch(() => {});
+    return saveChain;
   }
 
   async function save() {
@@ -376,15 +388,24 @@
     saveTimer = null;
     const n = activeNote();
     if (!n) return;
-    if (n.body !== textarea.value) {
-      n.body = textarea.value;
-      const updated = await invoke('notes:update', n.id, { body: n.body });
+    const body = textarea.value;
+    if (n.body === body) {
+      statusEl.textContent = 'saved ✓';
+      statusEl.classList.add('qn-ok');
+      return;
+    }
+    saveInFlight = true;
+    try {
+      n.body = body;
+      const updated = await invoke('notes:update', n.id, { body });
       if (updated) mergeNote({ ...updated, body: textarea.value });
       if (state.pane2Id === n.id && canReplace(text2)) loadPane2IntoEditor(true);
       renderSelector();
       renderPane1Selector();
       renderPane2Selector();
       renderTabs();
+    } finally {
+      saveInFlight = false;
     }
     statusEl.textContent = 'saved ✓';
     statusEl.classList.add('qn-ok');
@@ -394,19 +415,27 @@
     clearTimeout(p2SaveTimer);
     p2SaveTimer = null;
     const n = pane2Note();
-    if (!n || n.body === text2.value) return;
-    n.body = text2.value;
-    const updated = await invoke('notes:update', n.id, { body: n.body });
-    if (updated) mergeNote({ ...updated, body: text2.value });
-    if (state.activeId === n.id && canReplace(textarea)) loadActiveIntoEditor(true);
-    renderSelector();
-    renderPane1Selector();
-    renderPane2Selector();
-    renderTabs();
+    if (!n) return;
+    const body = text2.value;
+    if (n.body === body) return;
+    p2SaveInFlight = true;
+    try {
+      n.body = body;
+      const updated = await invoke('notes:update', n.id, { body });
+      if (updated) mergeNote({ ...updated, body: text2.value });
+      if (state.activeId === n.id && canReplace(textarea)) loadActiveIntoEditor(true);
+      renderSelector();
+      renderPane1Selector();
+      renderPane2Selector();
+      renderTabs();
+    } finally {
+      p2SaveInFlight = false;
+    }
   }
 
   async function flushSaves() {
-    if (saveTimer) await save();
+    if (saveTimer) await queueSave();
+    else await saveChain;
     if (p2SaveTimer) await savePane2();
   }
 
@@ -1165,12 +1194,16 @@
       const row = e.target.closest('.chk-line[data-line]');
       if (!row) return;
       e.preventDefault();
+      e.stopPropagation();
       const next = window.QNMarkdown.toggleCheck(textarea.value, row.dataset.line);
       if (next === textarea.value) return;
       textarea.value = next;
+      lastInputAt = Date.now();
       updateCounter();
-      await save();
       renderPreview();
+      statusEl.textContent = 'saving…';
+      statusEl.classList.remove('qn-ok');
+      await queueSave();
     });
 
     const ZOOM_MIN = 10, ZOOM_MAX = 28;

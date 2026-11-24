@@ -6,8 +6,15 @@
 // Images: `attachments/…` paths, Obsidian `![[name.png]]` embeds, data: URLs
 // and http(s) URLs. Local files are served through the qn-asset: protocol.
 (function (root) {
-  const { escapeHtml } = root.QN;
+  const escapeHtml = (root.QN && root.QN.escapeHtml)
+    ? root.QN.escapeHtml
+    : (s) => String(s).replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const ZWS_RE = /[\u200B-\u200D\uFEFF\u00AD]/g;
+
+  // Checklist: indent, bullet (- * +), [ ] / [x] / [X], optional task text.
+  // Zero-width chars are stripped before matching so pasted tasks still toggle.
+  const CHECK_RE = /^(\s*)([-*+])[ \t]+\[([ Xx])\](?:[ \t]+(.*))?$/;
 
   function imageSrc(url) {
     if (/^(https?:|data:image\/)/i.test(url)) return url;
@@ -105,6 +112,10 @@
     return { html: h, consumed: i - start };
   }
 
+  function matchCheck(line) {
+    return String(line).replace(ZWS_RE, '').match(CHECK_RE);
+  }
+
   function render(text) {
     const lines = String(text || '').split('\n');
     let html = '', inCode = false, inList = false, inOList = false;
@@ -124,11 +135,16 @@
         const t = tryTable(lines, idx);
         if (t) { closeList(); html += t.html; idx += t.consumed - 1; continue; }
       }
-      const chk = line.match(/^(\s*)[-*] \[( |x|X)\](?:\s+(.*))?$/);
+      const chk = matchCheck(line);
       if (chk) {
         closeList();
-        const checked = chk[2].toLowerCase() === 'x';
-        html += `<div class="chk-line${checked ? ' done' : ''}" data-line="${idx}"><input type="checkbox"${checked ? ' checked' : ''} tabindex="-1"><span class="txt">${inline(chk[3] || '')}</span></div>`;
+        const checked = chk[3].toLowerCase() === 'x';
+        // data-line indexes the full note body (desktop edits body without YAML).
+        // Checkbox input is non-interactive; the row click handler owns the toggle
+        // so the native checked state cannot fight Markdown.
+        html += `<div class="chk-line${checked ? ' done' : ''}" data-line="${idx}">` +
+          `<input type="checkbox"${checked ? ' checked' : ''} tabindex="-1" aria-hidden="true">` +
+          `<span class="txt">${inline(chk[4] || '')}</span></div>`;
         continue;
       }
       const h = line.match(/^(#{1,3})\s+(.+)$/);
@@ -159,16 +175,21 @@
   }
 
   function toggleCheck(text, lineIndex) {
-    const lines = String(text == null ? '' : text).split('\n');
+    const raw = String(text == null ? '' : text);
+    const lines = raw.split('\n');
     const idx = parseInt(lineIndex, 10);
-    if (!Number.isInteger(idx) || idx < 0 || idx >= lines.length) return String(text == null ? '' : text);
-    const next = lines[idx].replace(/^(\s*[-*] \[)( |x|X)(\])/, (_, a, mark, b) =>
-      a + (mark.toLowerCase() === 'x' ? ' ' : 'x') + b
-    );
-    if (next === lines[idx]) return lines.join('\n');
-    lines[idx] = next;
+    if (!Number.isInteger(idx) || idx < 0 || idx >= lines.length) return raw;
+    const chk = matchCheck(lines[idx]);
+    if (!chk) return raw;
+    const checked = chk[3].toLowerCase() === 'x';
+    const indent = chk[1];
+    const bullet = chk[2] === '+' ? '-' : chk[2];
+    const task = chk[4] || '';
+    lines[idx] = `${indent}${bullet} [${checked ? ' ' : 'x'}]${task ? ` ${task}` : ''}`;
     return lines.join('\n');
   }
 
-  root.QNMarkdown = { render, toggleCheck };
-})(window);
+  const api = { render, toggleCheck, CHECK_RE };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.QNMarkdown = api;
+})(typeof window !== 'undefined' ? window : globalThis);
