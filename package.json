@@ -1,7 +1,7 @@
 {
   "name": "quick-notes-desktop",
   "productName": "Quick Notes Desktop",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Sticky Markdown notes pinned to Windows applications. Desktop port of the Quick Notes Chrome extension with Obsidian vault and Google Drive sync.",
   "main": "main.js",
   "author": "Quick Notes contributors",
